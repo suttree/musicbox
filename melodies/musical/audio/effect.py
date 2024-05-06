@@ -171,31 +171,31 @@ def echo(data, delay=0.5, decay=0.5, wet=0.5, rate=44100):
     
     return (data * (1 - wet)) + (output_audio * wet)
     
-import soundfile as sf
-import resampy
-import numpy as np
-def pitch_shift(data, semitones, sample_rate=44100):
-    """
-    Apply pitch shifting to the audio data.
-    
-    :param data: numpy array representing the audio data
-    :param semitones: number of semitones to shift the pitch
-    :param sample_rate: sample rate of the audio data (default: 44100 Hz)
-    :return: pitch-shifted audio data
-    """
-    pitch_ratio = 2 ** (semitones / 12)
-
-    # Write the audio data to a temporary file
-    temp_file = 'temp_audio.wav'
-    sf.write(temp_file, data, sample_rate)
-
-    # Read the audio data from the temporary file
-    shifted_data, _ = sf.read(temp_file)
-
-    # Resample the audio data to apply pitch shifting
-    shifted_data = resampy.resample(shifted_data, sample_rate, int(sample_rate / pitch_ratio))
-
-    return shifted_data
+#import soundfile as sf
+#import resampy
+#import numpy as np
+#def pitch_shift(data, semitones, sample_rate=44100):
+#    """
+#    Apply pitch shifting to the audio data.
+#    
+#    :param data: numpy array representing the audio data
+#    :param semitones: number of semitones to shift the pitch
+#    :param sample_rate: sample rate of the audio data (default: 44100 Hz)
+#    :return: pitch-shifted audio data
+#    """
+#    pitch_ratio = 2 ** (semitones / 12)
+#
+#    # Write the audio data to a temporary file
+#    temp_file = 'temp_audio.wav'
+#    sf.write(temp_file, data, sample_rate)
+#
+#    # Read the audio data from the temporary file
+#    shifted_data, _ = sf.read(temp_file)
+#
+#    # Resample the audio data to apply pitch shifting
+#    shifted_data = resampy.resample(shifted_data, sample_rate, int(sample_rate / pitch_ratio))
+#
+#    return shifted_data
     
 import numpy as np
 from scipy.signal import lfilter

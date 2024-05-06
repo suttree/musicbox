@@ -120,7 +120,7 @@ data = timeline.render()
 data = effect.shimmer(data, 0.024)
 data = effect.tremolo(data, freq=0.4)
 data = effect.reverb(data, 0.8, 0.0525)
-data = effect.pitch_shift(data, 2)
+#data = effect.pitch_shift(data, 2)
 
 from musical.utils import save_normalized_audio
 save_normalized_audio(data, 44100, os.path.basename(__file__))

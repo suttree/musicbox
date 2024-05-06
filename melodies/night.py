@@ -57,7 +57,7 @@ for i in range(2):
 # Render the audio from the timeline
 data = timeline.render()
 data = effect.simple_delay(data)
-data = effect.pitch_shift(data, 3)
+#data = effect.pitch_shift(data, 3)
 data = effect.echo(data)
 #data = effect.wah(data)
 
