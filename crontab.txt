@@ -1,0 +1,19 @@
+0 4 * * * /home/pi/src/HausTones/./volume.sh  >> /tmp/cron.log 2>&1
+0 7,19 * * * /home/pi/src/HausTones/./pele.sh  >> /tmp/cron.log 2>&1
+
+
+# 2024
+
+30 23 * * * /home/pi/src/haus/nighttime.sh
+
+55 8 * * * /usr/bin/env python /home/pi/src/haus/blinkstick-leds.py
+
+30 * * * * cd /home/pi/src/pele && git pull
+0 * * * * /home/pi/src/pele/./volume.sh
+
+0 10-11 * * * cd /home/pi/src/pele/ && python3 scripts/generate.local.sh >> /tmp/cron.log 2>&1
+0 16-17 * * * cd /home/pi/src/pele/ && python3 scripts/generate.local.sh >> /tmp/cron.log 2>&1
+
+@reboot  /usr/bin/env python /home/pi/src/haus/blinkstick-leds.py
+@reboot /home/pi/src/pele/./volume.sh
+@reboot cd /home/pi/src/pele/ && python3 scripts/monitor.play.all.alt.py >> /tmp/cron.log 2>&1

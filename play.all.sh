@@ -1,0 +1,1 @@
+scripts/play.all.sh
