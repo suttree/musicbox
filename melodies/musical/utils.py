@@ -2,12 +2,6 @@ import random,os
 from datetime import datetime
 import soundfile as sf
 import numpy as np
-from scipy.signal import butter, lfilter
-
-import numpy as np
-import soundfile as sf
-from scipy.signal import butter, lfilter
-from datetime import datetime
 
 def save_normalized_audio(data, samplerate=44100, current_script_filename=''):
     # Save the rendered audio to a temporary file
