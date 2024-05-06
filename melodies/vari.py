@@ -63,7 +63,8 @@ for j in range(2):
   time += duration + 0.25
 
 data = timeline.render()
-data = effect.autowah(data)
+#data = effect.autowah(data)
+data = effect.octave(data, wet=0.6)
 data = effect.echo(data)
 
 #from musical.utils import save_normalized_audio

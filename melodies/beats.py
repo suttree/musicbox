@@ -38,7 +38,8 @@ print("Rendering audio...")
 data = timeline.render()
 data = effect.tremolo(data, freq=0.7)
 data = effect.shimmer(data, 0.34)
-data = effect.wah(data, (800, 2000))
+#data = effect.wah(data, (800, 2000))
+data = effect.octave(data, wet=0.6)
 
 from musical.utils import save_normalized_audio
 save_normalized_audio(data, 44100, os.path.basename(__file__))
