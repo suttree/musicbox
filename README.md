@@ -22,7 +22,7 @@ sudo raspi-config and ensure audio output is not HDMI/headphones/etc
 - venv/bin/pip3 install noise
 - venv/bin/pip3 install numpy
 - venv/bin/pip3 install soundfile
-
+- venv/bin/pip3 install pydub
 
 
 - pip install -r requirements.txt
