@@ -67,8 +67,6 @@ while True:
         print("Monitoring the 'output' folder for new .wav files...")
         play_shuffled_files()
         print("All files have been played. Restarting the playlist...")
-    else:
-        print("Current time is outside the specified ranges. Waiting...")
 
     # Wait for 60 seconds before checking again
     time.sleep(60)
