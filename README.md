@@ -11,10 +11,10 @@ https://github.com/pimoroni/pirate-audio
 
 sudo raspi-config and ensure audio output is not HDMI/headphones/etc
 
-/boot/config.txt
-dtparam=audio=off
-dtoverlay=hifiberry-dac
-gpio=25=op,dh
+- /boot/config.txt
+- dtparam=audio=off
+- dtoverlay=hifiberry-dac
+- gpio=25=op,dh
 
 ## Use
 - python -m venv /home/duncan/src/musicbox/venv
