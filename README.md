@@ -17,11 +17,11 @@ dtoverlay=hifiberry-dac
 gpio=25=op,dh
 
 ## Use
-source venv/bin/activate
-pip install -r requirements.txt
-pip install --upgrade setuptools
-source venv/bin/activate
-venv/bin/python3.12 melodies/lullaby.py 
+- python -m venv /home/duncan/src/musicbox/venv
+- source venv/bin/activate
+- pip install -r requirements.txt
+- pip install --upgrade setuptools
+- venv/bin/python3.12 melodies/lullaby.py 
 
 ## todo
 
