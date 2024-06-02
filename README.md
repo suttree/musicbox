@@ -19,6 +19,12 @@ gpio=25=op,dh
 ## Use
 - python -m venv /home/duncan/src/musicbox/venv
 - source venv/bin/activate
+- venv/bin/pip3 install noise
+- venv/bin/pip3 install numpy
+- venv/bin/pip3 install soundfile
+
+
+
 - pip install -r requirements.txt
 - pip install --upgrade setuptools
 - venv/bin/python3.12 melodies/lullaby.py 
