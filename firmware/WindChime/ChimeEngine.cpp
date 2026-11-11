@@ -8,8 +8,10 @@ constexpr float twoPi = 6.28318530718f;
 constexpr float lowestTonicHz = 261.6256f; // C4
 constexpr uint32_t attackSamples = ChimeEngine::sampleRate * 8 / 1000;
 constexpr uint32_t releaseSamples = ChimeEngine::sampleRate / 2;
-constexpr float mixGain = 0.65f;
-constexpr float fuzzMix = 0.38f;
+constexpr float mixGain = 0.44f;
+constexpr float fuzzMix = 0.86f;
+constexpr float fuzzDrive = 18.0f;
+constexpr float fuzzResonance = 0.60f;
 
 constexpr int degreesPerOctave = 5;
 constexpr int highestDegree = 8;
@@ -38,6 +40,19 @@ constexpr Resonance resonances[] = {
 ChimeEngine::ChimeEngine(uint32_t seed)
     : randomState_(seed == 0 ? 1 : seed), scaleIndex_(nextRandom() % scaleCount) {}
 
+float ChimeEngine::Fuzz::process(float input) {
+    const float driven = std::clamp(fuzzDrive * input, -1.0f, 1.0f);
+    const float saturated = 0.28f * (driven - driven * driven * driven / 3.0f);
+
+    // Sweep the resonant band down after each strike, through the new harmonics.
+    low += cutoff * band;
+    band += cutoff * (saturated - low - 0.42f * band);
+    cutoff += sweepRate * (restingCutoff - cutoff);
+
+    const float colored = 0.72f * saturated + fuzzResonance * band;
+    return input + mix * (colored - input);
+}
+
 uint32_t ChimeEngine::nextRandom() {
     randomState_ ^= randomState_ << 13;
     randomState_ ^= randomState_ >> 17;
@@ -57,7 +72,7 @@ void ChimeEngine::beginPhrase() {
     melodyDirection_ = static_cast<int>(nextRandom() % 3) - 1;
     phrasePace_ = 1.4f + uniform() * 1.7f;
     phraseBrightness_ = 0.55f + uniform() * 0.55f;
-    phraseFuzz_ = nextRandom() % 4 == 0;
+    phraseFuzz_ = 0.40f + uniform() * 0.60f;
 }
 
 void ChimeEngine::strike() {
@@ -109,7 +124,14 @@ void ChimeEngine::strike() {
         }
         voice.duration = static_cast<uint32_t>(8.5f * decayScale * sampleRate);
         voice.remaining = voice.duration;
-        voice.fuzz = phraseFuzz_;
+        const float brightHz = std::min(5.5f * frequency, 2800.0f);
+        const float darkHz = std::min(1.15f * frequency, 850.0f);
+        voice.fuzz = {
+            fuzzMix * phraseFuzz_,
+            2.0f * std::sin(0.5f * twoPi * brightHz / sampleRate),
+            2.0f * std::sin(0.5f * twoPi * darkHz / sampleRate),
+            1.0f / (sampleRate * 0.18f * decayScale),
+        };
         return;
     }
 }
@@ -138,10 +160,8 @@ void ChimeEngine::render(int16_t* samples, std::size_t count) {
                 sum += partial.imaginary;
             }
 
-            if (voice.fuzz) {
-                const float driven = std::clamp(8.0f * sum, -1.0f, 1.0f);
-                const float softened = 0.25f * (driven - driven * driven * driven / 3.0f);
-                sum += fuzzMix * (softened - sum);
+            if (voice.fuzz.mix > 0.0f) {
+                sum = voice.fuzz.process(sum);
             }
 
             const uint32_t age = voice.duration - voice.remaining;

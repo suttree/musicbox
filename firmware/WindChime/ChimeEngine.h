@@ -23,11 +23,22 @@ private:
         float rotationImaginary;
     };
 
+    struct Fuzz {
+        float mix = 0.0f;
+        float cutoff = 0.0f;
+        float restingCutoff = 0.0f;
+        float sweepRate = 0.0f;
+        float low = 0.0f;
+        float band = 0.0f;
+
+        float process(float input);
+    };
+
     struct Voice {
         Partial partials[partialCount]{};
         uint32_t duration = 0;
         uint32_t remaining = 0;
-        bool fuzz = false;
+        Fuzz fuzz;
     };
 
     uint32_t nextRandom();
@@ -45,6 +56,6 @@ private:
     float tonicHz_ = 0.0f;
     float phrasePace_ = 0.0f;
     float phraseBrightness_ = 0.0f;
-    bool phraseFuzz_ = false;
+    float phraseFuzz_ = 0.0f;
     ChimeEffects effects_;
 };
