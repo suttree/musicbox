@@ -4,7 +4,7 @@ codenamne pele, the sad ex-bofriend genererator
 
 Wind chimes, haus vibes, pele.
 
-The [ESP32 wind chime firmware](firmware/README.md) generates its own audio on the device. The Raspberry Pi setup is below.
+The [ESP32 music box firmware](firmware/README.md) generates its own audio on the device. The Raspberry Pi setup is below.
 
 ## Install
 sudo apt-get install alsa-tools alsa-utils

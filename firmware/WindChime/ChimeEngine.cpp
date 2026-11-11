@@ -5,14 +5,14 @@
 
 namespace {
 constexpr float twoPi = 6.28318530718f;
-constexpr float lowestTonicHz = 261.6256f; // C4
-constexpr uint32_t attackSamples = ChimeEngine::sampleRate * 8 / 1000;
+constexpr float lowestTonicHz = 195.9977f; // G3
+constexpr uint32_t attackSamples = ChimeEngine::sampleRate * 48 / 1000;
 constexpr uint32_t releaseSamples = ChimeEngine::sampleRate / 2;
 constexpr float mixGain = 0.65f;
 constexpr float fuzzMix = 0.38f;
 
 constexpr int degreesPerOctave = 5;
-constexpr int highestDegree = 8;
+constexpr int highestDegree = 7;
 constexpr int scales[][degreesPerOctave] = {
     {0, 2, 4, 7, 9},  // Major pentatonic
     {0, 3, 5, 7, 10}, // Minor pentatonic
@@ -21,17 +21,17 @@ constexpr int scales[][degreesPerOctave] = {
 };
 constexpr int scaleCount = sizeof(scales) / sizeof(scales[0]);
 
-struct Resonance {
+struct PartialTuning {
     float ratio;
     float level;
     float decaySeconds;
 };
 
-constexpr Resonance resonances[] = {
-    {1.0f, 0.74f, 1.65f},
-    {2.01f, 0.18f, 0.85f},
-    {2.76f, 0.10f, 0.53f},
-    {4.07f, 0.045f, 0.27f},
+constexpr PartialTuning voicePartials[] = {
+    {1.0f, 0.68f, 1.80f},
+    {1.003f, 0.15f, 1.25f}, // A slightly detuned copy of the fundamental.
+    {2.0f, 0.19f, 0.67f},
+    {3.0f, 0.075f, 0.26f},
 };
 }
 
@@ -96,12 +96,12 @@ void ChimeEngine::strike() {
         const float decayScale = 0.58f + uniform() * 0.80f;
 
         for (int i = 0; i < partialCount; ++i) {
-            const auto& resonance = resonances[i];
-            const float angle = twoPi * frequency * resonance.ratio / sampleRate;
-            const float decay = std::exp(-1.0f / (sampleRate * resonance.decaySeconds * decayScale));
-            const float brightness = i == 0 ? 1.0f : phraseBrightness_;
+            const auto& tuning = voicePartials[i];
+            const float angle = twoPi * frequency * tuning.ratio / sampleRate;
+            const float decay = std::exp(-1.0f / (sampleRate * tuning.decaySeconds * decayScale));
+            const float brightness = tuning.ratio >= 2.0f ? phraseBrightness_ : 1.0f;
             voice.partials[i] = {
-                strength * resonance.level * brightness,
+                strength * tuning.level * brightness,
                 0.0f,
                 decay * std::cos(angle),
                 decay * std::sin(angle),
@@ -146,7 +146,8 @@ void ChimeEngine::render(int16_t* samples, std::size_t count) {
 
             const uint32_t age = voice.duration - voice.remaining;
             if (age < attackSamples) {
-                sum *= static_cast<float>(age) / attackSamples;
+                const float attack = static_cast<float>(age) / attackSamples;
+                sum *= attack * attack * (3.0f - 2.0f * attack);
             } else if (voice.remaining <= releaseSamples) {
                 sum *= static_cast<float>(voice.remaining - 1) / releaseSamples;
             }
