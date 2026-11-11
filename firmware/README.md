@@ -4,7 +4,7 @@ The ESP32-S3 plays short groups of chimes around the clock. Each group picks a n
 
 Each strike starts four damped sine waves. Its strength and ring time vary, and the higher resonances fade first. Up to six notes can ring together.
 
-The amount of fuzz varies with each phrase. A resonant filter sweeps downward on each strike, so the chime starts bright and takes on a darker, squelchy sound as it rings. Each note leaves two soft echoes at 240 and 520 milliseconds, followed by quieter repeats. A long reverb fills the space between strikes.
+Each note leaves two soft echoes at 240 and 520 milliseconds, followed by quieter repeats. A long reverb fills the space between strikes. About one phrase in four gets a little fuzz on the chimes.
 
 The sketch sends 32 kHz, 16-bit audio directly to an I²S amp. The bench setup runs offline from USB power.
 
@@ -33,4 +33,4 @@ The wiring uses GPIO numbers from the [DevKitC-1 guide](https://docs.espressif.c
 
 In [ChimeEngine.cpp](WindChime/ChimeEngine.cpp), lower `mixGain` for quieter playback. Change `phrasePace_` for more space between strikes in a group or `gapSeconds` for longer pauses between groups. The `scales` table sets the available pitch patterns, and `resonances` controls the chime's brightness and decay.
 
-In the synth, `fuzzMix` controls how much fuzz you hear, `fuzzDrive` sets how hard the signal saturates, and `fuzzResonance` controls how pronounced the sweep sounds. In [ChimeEffects.cpp](WindChime/ChimeEffects.cpp), `echoMix` sets the level of the echoes, `echoFeedback` sets how much signal repeats, and `reverbMix` sets the level of the reverb.
+Lower `fuzzMix` in the synth to soften the fuzz. In [ChimeEffects.cpp](WindChime/ChimeEffects.cpp), `echoMix` sets the level of the echoes, `echoFeedback` sets how much signal repeats, and `reverbMix` sets the level of the reverb.
