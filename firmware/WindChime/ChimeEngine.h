@@ -1,11 +1,13 @@
 #pragma once
 
+#include "ChimeEffects.h"
+
 #include <cstddef>
 #include <cstdint>
 
 class ChimeEngine {
 public:
-    static constexpr uint32_t sampleRate = 32000;
+    static constexpr uint32_t sampleRate = ChimeEffects::sampleRate;
 
     explicit ChimeEngine(uint32_t seed);
     void render(int16_t* samples, std::size_t count);
@@ -25,6 +27,7 @@ private:
         Partial partials[partialCount]{};
         uint32_t duration = 0;
         uint32_t remaining = 0;
+        bool fuzz = false;
     };
 
     uint32_t nextRandom();
@@ -42,4 +45,6 @@ private:
     float tonicHz_ = 0.0f;
     float phrasePace_ = 0.0f;
     float phraseBrightness_ = 0.0f;
+    bool phraseFuzz_ = false;
+    ChimeEffects effects_;
 };

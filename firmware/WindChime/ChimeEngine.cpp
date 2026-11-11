@@ -1,5 +1,6 @@
 #include "ChimeEngine.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -8,6 +9,7 @@ constexpr float lowestTonicHz = 261.6256f; // C4
 constexpr uint32_t attackSamples = ChimeEngine::sampleRate * 8 / 1000;
 constexpr uint32_t releaseSamples = ChimeEngine::sampleRate / 2;
 constexpr float mixGain = 0.65f;
+constexpr float fuzzMix = 0.38f;
 
 constexpr int degreesPerOctave = 5;
 constexpr int highestDegree = 8;
@@ -55,6 +57,7 @@ void ChimeEngine::beginPhrase() {
     melodyDirection_ = static_cast<int>(nextRandom() % 3) - 1;
     phrasePace_ = 1.4f + uniform() * 1.7f;
     phraseBrightness_ = 0.55f + uniform() * 0.55f;
+    phraseFuzz_ = nextRandom() % 4 == 0;
 }
 
 void ChimeEngine::strike() {
@@ -106,6 +109,7 @@ void ChimeEngine::strike() {
         }
         voice.duration = static_cast<uint32_t>(8.5f * decayScale * sampleRate);
         voice.remaining = voice.duration;
+        voice.fuzz = phraseFuzz_;
         return;
     }
 }
@@ -134,6 +138,12 @@ void ChimeEngine::render(int16_t* samples, std::size_t count) {
                 sum += partial.imaginary;
             }
 
+            if (voice.fuzz) {
+                const float driven = std::clamp(8.0f * sum, -1.0f, 1.0f);
+                const float softened = 0.25f * (driven - driven * driven * driven / 3.0f);
+                sum += fuzzMix * (softened - sum);
+            }
+
             const uint32_t age = voice.duration - voice.remaining;
             if (age < attackSamples) {
                 sum *= static_cast<float>(age) / attackSamples;
@@ -144,8 +154,8 @@ void ChimeEngine::render(int16_t* samples, std::size_t count) {
             --voice.remaining;
         }
 
-        const float scaled = mix * mixGain;
-        const float limited = std::fmax(-1.0f, std::fmin(1.0f, scaled));
+        const float scaled = mixGain * effects_.process(mix);
+        const float limited = std::clamp(scaled, -1.0f, 1.0f);
         samples[frame] = static_cast<int16_t>(limited * 32767.0f);
     }
 }
