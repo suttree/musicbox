@@ -4,15 +4,20 @@
 
 namespace {
 constexpr float twoPi = 6.28318530718f;
-constexpr float rootHz = 293.6648f; // D4
+constexpr float lowestTonicHz = 261.6256f; // C4
 constexpr uint32_t attackSamples = ChimeEngine::sampleRate * 8 / 1000;
 constexpr uint32_t releaseSamples = ChimeEngine::sampleRate / 2;
-constexpr uint32_t noteSamples = ChimeEngine::sampleRate * 12;
 constexpr float mixGain = 0.65f;
 
-// D major pentatonic. Repeated lower degrees keep the highest tubes occasional.
-constexpr int tubes[] = {0, 0, 2, 4, 4, 7, 7, 9, 12, 14, 16, 19};
-constexpr int tubeCount = sizeof(tubes) / sizeof(tubes[0]);
+constexpr int degreesPerOctave = 5;
+constexpr int highestDegree = 8;
+constexpr int scales[][degreesPerOctave] = {
+    {0, 2, 4, 7, 9},  // Major pentatonic
+    {0, 3, 5, 7, 10}, // Minor pentatonic
+    {0, 2, 5, 7, 10}, // Suspended pentatonic
+    {0, 3, 5, 8, 10}, // Man Gong
+};
+constexpr int scaleCount = sizeof(scales) / sizeof(scales[0]);
 
 struct Resonance {
     float ratio;
@@ -29,15 +34,7 @@ constexpr Resonance resonances[] = {
 }
 
 ChimeEngine::ChimeEngine(uint32_t seed)
-    : randomState_(seed == 0 ? 1 : seed) {}
-
-void ChimeEngine::setPlaying(bool playing) {
-    if (playing && !playing_) {
-        samplesUntilStrike_ = 0;
-        strikesLeft_ = 0;
-    }
-    playing_ = playing;
-}
+    : randomState_(seed == 0 ? 1 : seed), scaleIndex_(nextRandom() % scaleCount) {}
 
 uint32_t ChimeEngine::nextRandom() {
     randomState_ ^= randomState_ << 13;
@@ -50,55 +47,75 @@ float ChimeEngine::uniform() {
     return static_cast<float>(nextRandom() >> 8) / 16777216.0f;
 }
 
+void ChimeEngine::beginPhrase() {
+    scaleIndex_ = (scaleIndex_ + 1 + nextRandom() % (scaleCount - 1)) % scaleCount;
+    tonicHz_ = lowestTonicHz * std::exp2((nextRandom() % 8) / 12.0f);
+    strikesLeft_ = 2 + nextRandom() % 5;
+    degree_ = 1 + nextRandom() % 5;
+    melodyDirection_ = static_cast<int>(nextRandom() % 3) - 1;
+    phrasePace_ = 1.4f + uniform() * 1.7f;
+    phraseBrightness_ = 0.55f + uniform() * 0.55f;
+}
+
 void ChimeEngine::strike() {
     if (strikesLeft_ == 0) {
-        strikesLeft_ = 2 + nextRandom() % 4;
+        beginPhrase();
     }
     --strikesLeft_;
     const float gapSeconds = strikesLeft_ == 0
-        ? 7.0f + uniform() * 9.0f
-        : 1.3f + uniform() * 2.5f;
+        ? 10.0f + uniform() * 14.0f
+        : phrasePace_ * (0.7f + uniform() * 0.65f);
     samplesUntilStrike_ = static_cast<uint32_t>(gapSeconds * sampleRate);
+
+    const int semitones = scales[scaleIndex_][degree_ % degreesPerOctave]
+        + 12 * (degree_ / degreesPerOctave);
+    const float frequency = tonicHz_ * std::exp2(semitones / 12.0f);
+
+    // Move mostly by scale steps. A climb or descent turns at the edge of the range.
+    const int direction = melodyDirection_ == 0
+        ? (nextRandom() % 2 == 0 ? -1 : 1)
+        : melodyDirection_;
+    const int step = direction * (nextRandom() % 4 == 0 ? 2 : 1);
+    const int nextDegree = degree_ + step;
+    if (nextDegree < 0 || nextDegree > highestDegree) {
+        degree_ -= step;
+        melodyDirection_ = -melodyDirection_;
+    } else {
+        degree_ = nextDegree;
+    }
 
     for (auto& voice : voices_) {
         if (voice.remaining != 0) {
             continue;
         }
 
-        int tube = nextRandom() % tubeCount;
-        // Skip the last pitch, including its duplicate entries in the table.
-        while (lastTube_ >= 0 && tubes[tube] == tubes[lastTube_]) {
-            tube = (tube + 1) % tubeCount;
-        }
-        lastTube_ = tube;
-        const float frequency = rootHz * std::exp2(tubes[tube] / 12.0f);
-        const float strength = 0.16f + uniform() * 0.17f;
-        const float decayScale = 0.8f + uniform() * 0.35f;
+        const float strength = 0.13f + uniform() * 0.18f;
+        const float decayScale = 0.58f + uniform() * 0.80f;
 
         for (int i = 0; i < partialCount; ++i) {
             const auto& resonance = resonances[i];
             const float angle = twoPi * frequency * resonance.ratio / sampleRate;
             const float decay = std::exp(-1.0f / (sampleRate * resonance.decaySeconds * decayScale));
+            const float brightness = i == 0 ? 1.0f : phraseBrightness_;
             voice.partials[i] = {
-                strength * resonance.level,
+                strength * resonance.level * brightness,
                 0.0f,
                 decay * std::cos(angle),
                 decay * std::sin(angle),
             };
         }
-        voice.remaining = noteSamples;
+        voice.duration = static_cast<uint32_t>(8.5f * decayScale * sampleRate);
+        voice.remaining = voice.duration;
         return;
     }
 }
 
 void ChimeEngine::render(int16_t* samples, std::size_t count) {
     for (std::size_t frame = 0; frame < count; ++frame) {
-        if (playing_) {
-            if (samplesUntilStrike_ == 0) {
-                strike();
-            }
-            --samplesUntilStrike_;
+        if (samplesUntilStrike_ == 0) {
+            strike();
         }
+        --samplesUntilStrike_;
 
         float mix = 0.0f;
         for (auto& voice : voices_) {
@@ -117,7 +134,7 @@ void ChimeEngine::render(int16_t* samples, std::size_t count) {
                 sum += partial.imaginary;
             }
 
-            const uint32_t age = noteSamples - voice.remaining;
+            const uint32_t age = voice.duration - voice.remaining;
             if (age < attackSamples) {
                 sum *= static_cast<float>(age) / attackSamples;
             } else if (voice.remaining <= releaseSamples) {

@@ -1,6 +1,8 @@
 # Wind chime music box
 
-This sketch makes its own audio on an ESP32-S3. Each strike picks a tube from a D major pentatonic scale and starts four damped sine waves. The higher resonances die away first. The box plays two to five strikes per gust, 1.3 to 3.8 seconds apart, then waits 7 to 16 seconds. It mixes up to six ringing notes at a time.
+The ESP32-S3 plays short groups of chimes around the clock. Each group picks a new pentatonic scale, a tonic, a pace, and a melodic direction. The notes climb, descend, or wander, mostly one scale step at a time. Each group contains two to six strikes and ends with a pause of 10 to 24 seconds before the next group starts.
+
+Each strike starts four damped sine waves. Its strength and ring time vary, and the higher resonances fade first. Up to six notes can ring together.
 
 The sketch sends 32 kHz, 16-bit audio directly to an I²S amp. The bench setup runs offline from USB power.
 
@@ -25,14 +27,6 @@ The amp drives both speaker terminals. Keep both speaker wires off ground. Use a
 
 The wiring uses GPIO numbers from the [DevKitC-1 guide](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html). See the [MAX98357A breakout pinout](https://learn.adafruit.com/adafruit-max98357-i2s-class-d-mono-amp/pinouts) for power, speaker, and gain details.
 
-## Optional hours
-
-The default sketch plays continuously. To use the old Musicbox windows, connect a battery-backed DS3231 breakout with 3.3 V I²C pull-ups. Use GPIO 8 for SDA, GPIO 9 for SCL, and common ground. Use a breakout rated to run at 3.3 V and power it from 3V3.
-
-Install Adafruit RTClib and its dependencies in Library Manager. Open the [RTClib DS3231 example](https://github.com/adafruit/RTClib/blob/master/examples/ds3231/ds3231.ino) and add `Wire.setPins(8, 9)` before `rtc.begin()`. The example sets an unset clock to the sketch's compile time in 24-hour mode. To reset a running clock, enable the example's unconditional `rtc.adjust()` call. Check the time it prints before uploading WindChime again. Adjust the clock when local clocks change.
-
-Set `MUSICBOX_USE_RTC` to `1` in the sketch and upload. The box starts new strikes between 06:00 and 09:00, between 18:00 and 23:00, and between 12:00 and 14:00 on weekends. Ringing notes decay when a window closes or the clock becomes unavailable.
-
 ## Adjust the sound
 
-In [ChimeEngine.cpp](WindChime/ChimeEngine.cpp), lower `mixGain` for quieter playback. Change `gapSeconds` for more space between notes or `rootHz` to shift all tubes up or down together. The `resonances` table controls the brightness and ring time.
+In [ChimeEngine.cpp](WindChime/ChimeEngine.cpp), lower `mixGain` for quieter playback. Change `phrasePace_` for more space between strikes in a group or `gapSeconds` for longer pauses between groups. The `scales` table sets the available pitch patterns, and `resonances` controls the chime's brightness and decay.
